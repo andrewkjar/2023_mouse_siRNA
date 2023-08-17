@@ -1,17 +1,12 @@
-Purpose: import and construct Seurat objects for CD11b+ cells
-
-```{r}
+# Import libraries
 library(Seurat)
 library(ggplot2)
 library(dplyr)
-```
 
-```{r}
 library(ggbeeswarm)
 library(ggprism)
-```
 
-```{r}
+# Import datasets
 so.1.data <- Read10X("/data/lippmann_lab/10331-AK/10331-AK-0001_S1_L005_results/filtered_matrix/sensitivity_5")
 so.1 <- CreateSeuratObject(counts = so.1.data, min.cells = 3, min.features = 200)
 so.1$orig.ident <- 'LUC1_CD11B_pos'
@@ -41,16 +36,13 @@ so.6.data <- Read10X("/data/lippmann_lab/10331-AK/10331-AK-0006_S1_L005_results/
 so.6 <- CreateSeuratObject(counts = so.6.data, min.cells = 3, min.features = 200)
 so.6$orig.ident <- 'PPIB3_CD11B_pos'
 rm(so.6.data)
-```
 
-```{r}
 # Merge datasets
 so.combined <- merge(so.1, y = c(so.2, so.3, so.4, so.5, so.6))
 
 # Do initial filtering based on mitochondrial percentage and number of features
 so.combined[["percent.mt"]] <- PercentageFeatureSet(so.combined, pattern = "mt")
 so.combined <- subset(so.combined, subset = nFeature_RNA > 800 & nFeature_RNA < 4000)
-
 
 # Process data, do dimension reduction
 so.combined <- NormalizeData(so.combined)
@@ -60,9 +52,8 @@ so.combined <- RunPCA(so.combined, npcs = 50, verbose = FALSE)
 so.combined <- RunUMAP(so.combined, reduction = "pca", dims = 1:50)
 so.combined <- FindNeighbors(so.combined, reduction = "pca", dims = 1:50)
 so.combined <- FindClusters(so.combined, resolution = 1)
-```
 
-```{r}
+# Mark which siRNA was used
 so.combined$siRNA <- so.combined$orig.ident
 so.combined$siRNA <- recode(so.combined$siRNA,
                             "LUC1_CD11B_pos" = "LUC",
@@ -71,9 +62,8 @@ so.combined$siRNA <- recode(so.combined$siRNA,
                             "PPIB1_CD11B_pos" = "PPIB",
                             "PPIB2_CD11B_pos" = "PPIB",
                             "PPIB3_CD11B_pos" = "PPIB")
-```
 
-```{r}
+# Categorize cell types
 so.combined$cell_type <- so.combined$seurat_clusters
 so.combined$cell_type <- recode(so.combined$cell_type,
                                 "0" = "Microglia 1",
@@ -86,25 +76,19 @@ so.combined$cell_type <- recode(so.combined$cell_type,
                                 "7" = "Microglia 2",
                                 "8" = "unknown",
                                 "9" = "Microglia 1")
-```
 
-```{r}
+# Save dataset
 saveRDS(so.combined, "2023.08.17_AK_10331_so.combined.RDS")
-```
 
-```{r}
+# Visualize 
 pdf("2023.08.17_DimPlot_10331.pdf", width = 5, height = 4)
 DimPlot(subset(so.combined, cell_type != 'unknown'))
 DimPlot(subset(so.combined, cell_type != 'unknown'), group.by = 'siRNA', cols = c('gray','black')) + ggtitle('')
 DimPlot(subset(so.combined, cell_type != 'unknown'), group.by = 'cell_type', cols = c('cyan4','cyan3','cyan2','deepskyblue4')) + ggtitle('')
-```
-```{r}
-pdf("2023.08.17_DotPlot_cell_type_markers_10331.pdf", width = 16, height = 3.5)
-DotPlot(subset(so.combined, cell_type != 'unknown'), group.by = 'cell_type', features = c('Crybb1','Cst3','P2ry12','Pros1','Tmem119','Jun','Junb','Fos','Egr1','Nfkbia','Apoe','Spp1','Lpl','Lyz2','Pf4','Ms4a7','Ccl24','F13a1','Ms4a6','Mrc1','Lyve1')) + 
-        scale_colour_gradient2(low="steelblue", mid="lightgrey", high="darkgoldenrod1")
-```
 
-```{r}
+pdf("2023.08.17_DotPlot_cell_type_markers_10331.pdf", width = 16, height = 3.5)
+DotPlot(subset(so.combined, cell_type != 'unknown'), group.by = 'cell_type', features = c('Crybb1','Cst3','P2ry12','Pros1','Tmem119','Jun','Junb','Fos','Egr1','Nfkbia','Apoe','Spp1','Lpl','Lyz2','Pf4','Ms4a7','Ccl24','F13a1','Ms4a6','Mrc1','Lyve1')) + scale_colour_gradient2(low="steelblue", mid="lightgrey", high="darkgoldenrod1")
+
 pdf("2023.08.17_PPIB_average_expression_10331.pdf", width = 3, height = 4)
 PPIB_levels <- AverageExpression(subset(so.combined, cell_type == 'Macrophage'), group.by = "orig.ident", features = 'Ppib')
 df <- as.data.frame(as.vector(PPIB_levels$RNA))
@@ -161,4 +145,3 @@ ggplot(df, aes(x = siRNA, y = `as.vector(PPIB_levels$RNA)`)) +
   theme_prism() + 
   theme(plot.title = element_text(hjust = 0, face = 'italic')) + 
   NoLegend()
-```
