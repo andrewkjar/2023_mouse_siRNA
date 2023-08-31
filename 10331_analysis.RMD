@@ -103,6 +103,8 @@ ggplot(df, aes(x = siRNA, y = `as.vector(PPIB_levels$RNA)`)) +
   theme_prism() + 
   theme(plot.title = element_text(hjust = 0, face = 'italic')) + 
   NoLegend()
+colnames(df) <- c('Average PPIB level','siRNA')
+write.csv(df, "2023.08.24_Macrophage_levels.csv")
 
 PPIB_levels <- AverageExpression(subset(so.combined, cell_type == 'Microglia 1'), group.by = "orig.ident", features = 'Ppib')
 df <- as.data.frame(as.vector(PPIB_levels$RNA))
@@ -117,6 +119,8 @@ ggplot(df, aes(x = siRNA, y = `as.vector(PPIB_levels$RNA)`)) +
   theme_prism() + 
   theme(plot.title = element_text(hjust = 0, face = 'italic')) + 
   NoLegend()
+colnames(df) <- c('Average PPIB level','siRNA')
+write.csv(df, "2023.08.24_Microglia 1_levels.csv")
 
 PPIB_levels <- AverageExpression(subset(so.combined, cell_type == 'Microglia 2'), group.by = "orig.ident", features = 'Ppib')
 df <- as.data.frame(as.vector(PPIB_levels$RNA))
@@ -131,6 +135,8 @@ ggplot(df, aes(x = siRNA, y = `as.vector(PPIB_levels$RNA)`)) +
   theme_prism() + 
   theme(plot.title = element_text(hjust = 0, face = 'italic')) + 
   NoLegend()
+colnames(df) <- c('Average PPIB level','siRNA')
+write.csv(df, "2023.08.24_Microglia 2_levels.csv")
 
 PPIB_levels <- AverageExpression(subset(so.combined, cell_type == 'Microglia 3'), group.by = "orig.ident", features = 'Ppib')
 df <- as.data.frame(as.vector(PPIB_levels$RNA))
@@ -145,3 +151,61 @@ ggplot(df, aes(x = siRNA, y = `as.vector(PPIB_levels$RNA)`)) +
   theme_prism() + 
   theme(plot.title = element_text(hjust = 0, face = 'italic')) + 
   NoLegend()
+colnames(df) <- c('Average PPIB level','siRNA')
+write.csv(df, "2023.08.24_Microglia 3_levels.csv")
+
+# Pull out macrophage cells and recluster
+so.mac <- subset(so, cell_type == 'Macrophage')
+
+so.mac <- NormalizeData(so.mac)
+so.mac <- FindVariableFeatures(so.mac, selection.method = "vst", nfeatures = 2000)
+so.mac <- ScaleData(so.mac, verbose = FALSE)
+so.mac <- RunPCA(so.mac, npcs = 50, verbose = FALSE)
+so.mac <- RunUMAP(so.mac, reduction = "pca", dims = 1:50)
+so.mac <- FindNeighbors(so.mac, reduction = "pca", dims = 1:50)
+so.mac <- FindClusters(so.mac, resolution = 0.75)
+
+so.mac$cell_type <- so.mac$seurat_clusters
+so.mac$cell_type <- recode(so.mac$cell_type,
+                            "0" = "MHC+",
+                            "1" = "Lyve1+")
+
+# Visualize and return average expression of PPIB
+pdf("2023.08.23_PMB_markers_FeaturePlot_macs_recluster.pdf", width = 12, height = 8)
+FeaturePlot(so.mac, features = c('Cd163','Cd38','Lyve1','Msr1','Cd36','H2-Ab1','Cd74','Cd83','Cd14','Nlrp3','Mrc1','Ms4a7'), order = T)
+
+pdf("2023.08.23_so.macs_DimPlot.pdf")
+DimPlot(so.mac)
+
+pdf("2023.08.31_PPIB_average_expression_10331_macs.pdf", width = 3, height = 4)
+PPIB_levels <- AverageExpression(subset(so.mac, cell_type == 'MHC+'), group.by = "orig.ident", features = 'Ppib')
+df <- as.data.frame(as.vector(PPIB_levels$RNA))
+df$siRNA <- as.factor(c('LUC','LUC','LUC','PPIB','PPIB','PPIB'))
+ggplot(df, aes(x = siRNA, y = `as.vector(PPIB_levels$RNA)`)) +
+  geom_boxplot(aes(fill = siRNA)) +
+  scale_fill_manual(values = c('gray','darkgoldenrod3')) + 
+  geom_beeswarm(size = 2.5, cex = 2) + 
+  ylab('Average PPIB level') +
+  ylim(c(0,5)) +
+  ggtitle('MHC+') +
+  theme_prism() + 
+  theme(plot.title = element_text(hjust = 0, face = 'italic')) + 
+  NoLegend()
+colnames(df) <- c('Average PPIB level','siRNA')
+write.csv(df, "2023.08.31_MHC+_Macrophage_levels.csv")
+
+PPIB_levels <- AverageExpression(subset(so.mac, cell_type == 'Lyve1+'), group.by = "orig.ident", features = 'Ppib')
+df <- as.data.frame(as.vector(PPIB_levels$RNA))
+df$siRNA <- as.factor(c('LUC','LUC','LUC','PPIB','PPIB','PPIB'))
+ggplot(df, aes(x = siRNA, y = `as.vector(PPIB_levels$RNA)`)) +
+  geom_boxplot(aes(fill = siRNA)) +
+  scale_fill_manual(values = c('gray','darkgoldenrod3')) + 
+  geom_beeswarm(size = 2.5, cex = 2) + 
+  ylab('Average PPIB level') +
+  ylim(c(0,5)) +
+  ggtitle('Lyve1+') +
+  theme_prism() + 
+  theme(plot.title = element_text(hjust = 0, face = 'italic')) + 
+  NoLegend()
+colnames(df) <- c('Average PPIB level','siRNA')
+write.csv(df, "2023.08.31_Lyve1+_Macrophage_levels.csv")
