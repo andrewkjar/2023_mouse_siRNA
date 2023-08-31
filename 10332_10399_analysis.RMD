@@ -1,17 +1,14 @@
 Purpose: import and construct Seurat objects for CD11b- cells
 
-```{r}
+# Import libraries
 library(Seurat)
 library(ggplot2)
 library(dplyr)
-```
 
-```{r}
 library(ggbeeswarm)
 library(ggprism)
-```
 
-```{r}
+# Import data
 so.1.data <- Read10X("/data/lippmann_lab/10399-AK/10399-AK-1_S1_L005_results/filtered_matrix/sensitivity_5")
 so.1 <- CreateSeuratObject(counts = so.1.data, min.cells = 3, min.features = 200)
 so.1$orig.ident <- 'LUC1_CD11B_neg'
@@ -41,9 +38,7 @@ so.6.data <- Read10X("/data/lippmann_lab/10332-AK/10332-AK-0006_S1_L005_results/
 so.6 <- CreateSeuratObject(counts = so.6.data, min.cells = 3, min.features = 200)
 so.6$orig.ident <- 'PPIB3_CD11B_neg'
 rm(so.6.data)
-```
 
-```{r}
 # Merge datasets
 so.combined <- merge(so.1, y = c(so.2, so.3, so.4, so.5, so.6))
 
@@ -51,16 +46,13 @@ so.combined <- merge(so.1, y = c(so.2, so.3, so.4, so.5, so.6))
 so.combined[["percent.mt"]] <- PercentageFeatureSet(so.combined, pattern = "^mt-")
 so.combined <- subset(so.combined, subset = nFeature_RNA > 800 & nFeature_RNA < 10000)
 so.combined <- subset(so.combined, subset = percent.mt < 25)
-```
 
-```{r}
+# Visualize QC metrics
 VlnPlot(so.combined, features = c('nCount_RNA','nFeature_RNA','percent.mt'), group.by = 'orig.ident', pt.size = 0)
-```
-```{r}
-table(so.combined$orig.ident)
-```
 
-```{r}
+# Print number of cells
+table(so.combined$orig.ident)
+
 # Process data, do dimension reduction
 so.combined <- NormalizeData(so.combined)
 so.combined <- FindVariableFeatures(so.combined, selection.method = "vst", nfeatures = 2000)
@@ -69,14 +61,8 @@ so.combined <- RunPCA(so.combined, npcs = 50, verbose = FALSE)
 so.combined <- RunUMAP(so.combined, reduction = "pca", dims = 1:50)
 so.combined <- FindNeighbors(so.combined, reduction = "pca", dims = 1:50)
 so.combined <- FindClusters(so.combined, resolution = 1)
-```
 
-```{r}
-so.combined <- readRDS("2023.08.31_so.combined_AK_10332_10339.RDS")
-```
-
-
-```{r}
+# Save in sample metadata
 so.combined$siRNA <- so.combined$orig.ident
 so.combined$siRNA <- recode(so.combined$siRNA,
                             "LUC1_CD11B_neg" = "LUC",
@@ -85,10 +71,8 @@ so.combined$siRNA <- recode(so.combined$siRNA,
                             "PPIB1_CD11B_neg" = "PPIB",
                             "PPIB2_CD11B_neg" = "PPIB",
                             "PPIB3_CD11B_neg" = "PPIB")
-```
 
-
-```{r}
+# Annotate cells
 so.combined$cell_type <- so.combined$seurat_clusters
 so.combined$cell_type <- recode(so.combined$cell_type,
                                 "0" = "Choroid plexus epithelial cells",
@@ -127,41 +111,27 @@ so.combined$cell_type <- recode(so.combined$cell_type,
                                 "33" = "Ependymal cells",
                                 "34" = "Ependymal cells",
                                 "35" = "Neurons")
-```
 
-```{r}
 sample_levels <- c('Smooth muscle cells','Endothelial cells / Pericytes','Endothelial cells (Arterial)','Endothelial cells (Venous / Capillary)','Choroid plexus epithelial cells','Ependymal cells','Fibroblasts (Dural)','Fibroblasts (Arachnoid)','Olfactory ensheathing cells','Oligodendrocytes','Astrocytes','Bergmann glia','Neural IPCs','Neurons','Microglia','Unknown')
 so.combined$cell_type <- factor(x = so.combined$cell_type, levels = sample_levels)
-```
 
-```{r}
+# Save RDS
+saveRDS(so.combined, "2023.08.31_so.combined_AK_10332_10339.RDS")
+
+# Visualize cell markers, dimension reduction, and PPIB levels
 pdf("2023.08.31_DotPlot_markers_AK_10332_10339.pdf", height = 8, width = 15)
 DotPlot(so.combined, group.by = 'cell_type', features = c('Acta2','Mustn1','Tagln','Myh11','Ly6c1','Cldn5','Ly6a','Pltp','Flt1','Degs2','Kcnj8','Higd1b','Rgs5','Hey1','Bmx','Sema3g','Slc16a2','Car4','Mfsd2a','Icam1','Slc38a5','Vwf','Ttr','Folr1','Clicb','Kl','Ccdc153','Tmem212','Hdc','Dynlrb2','Dcn','Col1a1','Pdgfrb','Crabp2','Fxyd5','Foxp1','Six1','S100a6','Ngfr','Aldh1a2','SLc6a13')) + 
         scale_colour_gradient2(low="steelblue", mid="lightgrey", high="darkgoldenrod1") + theme(axis.text.x = element_text(angle = 90))
 DotPlot(so.combined, group.by = 'cell_type', features = c('Prss56','Clca3a1','Fabp7','Frzb','Opalin','Ninj2','Mal','Mog','Hapln2','Docks','Anln','Gjb1','Fam107a','Cbs','Mlc1','Ntsr2','Slc7a11','Fgfr3','Agt','Slc6a11','Gldc','Slc13a3','Islr','Gdf10','Timp4','Hopx','Id4','2810417H13Rik','Cdca7','Rrm2','Ube2c','Top2a','Birc5','Map2','NeuN','Snap25','Slc17a7','Gad2','Reln','Itgam','Trem2')) + 
         scale_colour_gradient2(low="steelblue", mid="lightgrey", high="darkgoldenrod1")  + theme(axis.text.x = element_text(angle = 90))
-```
 
-```{r}
 pdf("2023.08.31_DimPlot_AK_10332_10339.pdf", width = 11, height = 8)
 DimPlot(subset(so.combined, cell_type != 'Unknown'), group.by = 'cell_type')
-```
-```{r}
+
 pdf("2023.08.31_DimPlot_clusters_AK_10332_10339.pdf", width = 10, height = 8)
 DimPlot(so.combined)
 DimPlot(so.combined, group.by = 'siRNA', cols = c('gray','black'))
-```
 
-```{r}
-VlnPlot(so.combined, group.by = 'cell_type', features = 'nFeature_RNA') + NoLegend()
-VlnPlot(so.combined, group.by = 'cell_type', features = 'nCount_RNA') + NoLegend()
-```
-
-```{r}
-saveRDS(so.combined, "2023.08.31_so.combined_AK_10332_10339.RDS")
-```
-
-```{r}
 pdf("2023.08.31_PPIB_average_expression_10332_1039.pdf", width = 3, height = 4)
 PPIB_levels <- AverageExpression(subset(so.combined, cell_type == 'Ependymal cells'), group.by = "orig.ident", features = 'Ppib')
 df <- as.data.frame(as.vector(PPIB_levels$RNA))
@@ -386,17 +356,13 @@ ggplot(df, aes(x = siRNA, y = `as.vector(PPIB_levels$RNA)`)) +
   NoLegend()
 colnames(df) <- c('Average PPIB level','siRNA')
 write.csv(df, "2023.08.31_Endothelial cells_fibroblasts_arachnoid_levels.csv")
-```
 
-```{r}
+# Print number of each cell type
 table(so.combined$cell_type)
-```
 
-
-```{r}
+# Subset and recluster endothelial cells
 so.ECs <- subset(so.combined, cell_type %in% c('Endothelial cells (Arterial)','Endothelial cells (Venous / Capillary)','Endothelial cells / Pericytes'))
-```
-```{r}
+
 # Process data, do dimension reduction
 so.ECs <- NormalizeData(so.ECs)
 so.ECs <- FindVariableFeatures(so.ECs, selection.method = "vst", nfeatures = 2000)
@@ -405,9 +371,8 @@ so.ECs <- RunPCA(so.ECs, npcs = 50, verbose = FALSE)
 so.ECs <- RunUMAP(so.ECs, reduction = "pca", dims = 1:50)
 so.ECs <- FindNeighbors(so.ECs, reduction = "pca", dims = 1:50)
 so.ECs <- FindClusters(so.ECs, resolution = 1)
-```
 
-```{r}
+# Annotate cell identities across arterio-venous tree
 so.ECs$cell_type <- so.ECs$seurat_clusters
 so.ECs$cell_type <- recode(so.ECs$cell_type,
                                 "0" = "D",
@@ -423,20 +388,15 @@ so.ECs$cell_type <- recode(so.ECs$cell_type,
                                 "10" = "other",
                                 "11" = "other")
 so.ECs$cell_type <- factor(x = so.ECs$cell_type, levels = c('A','B','C','D','E','F','G','other'))
-```
 
-```{r}
+# Visualize
 pdf("2023.08.31_AK_10332_10399_ECs_Feature_Plot.pdf")
 FeaturePlot(so.ECs, features = c('Vwf','Slc38a5','Icam1','Mfsd2a','Car4','Slc16a2','Sema3g','Bmx','Hey1'), order = T)
 FeaturePlot(subset(so.ECs, cell_type %in% c('A','B','C','D','E','F')), features = c('Vwf','Slc38a5','Icam1','Mfsd2a','Car4','Slc16a2','Sema3g','Bmx','Hey1'), order = T)
-```
 
-```{r}
 pdf("2023.08.31_AK_10332_10399_ECs_Dim_Plot.pdf")
 DimPlot(subset(so.ECs, cell_type %in% c('A','B','C','D','E','F')), group.by = 'cell_type')
-```
 
-```{r}
 PPIB_levels <- AverageExpression(subset(so.ECs, cell_type == 'A'), group.by = "orig.ident", features = 'Ppib')
 df <- as.data.frame(as.vector(PPIB_levels$RNA))
 df$siRNA <- as.factor(c('LUC','LUC','LUC','PPIB','PPIB','PPIB'))
@@ -472,10 +432,6 @@ df <- as.data.frame(as.vector(PPIB_levels$RNA))
 df$siRNA <- as.factor(c('LUC','LUC','LUC','PPIB','PPIB','PPIB'))
 colnames(df) <- c('Average PPIB level','siRNA')
 write.csv(df, "2023.08.31_Endothelial cells_F.csv")
-```
 
-
-```{r}
+# Save RDS
 saveRDS(so.ECs, "2023.08.31_so.ECs_AK_10332_10399.RDS")
-```
-
