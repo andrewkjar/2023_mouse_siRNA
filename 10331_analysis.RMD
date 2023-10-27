@@ -209,3 +209,20 @@ ggplot(df, aes(x = siRNA, y = `as.vector(PPIB_levels$RNA)`)) +
   NoLegend()
 colnames(df) <- c('Average PPIB level','siRNA')
 write.csv(df, "2023.08.31_Lyve1+_Macrophage_levels.csv")
+
+# Get full dataset knockdown rate
+PPIB_levels <- AverageExpression(so.combined2, group.by = "orig.ident", features = 'Ppib')
+df <- as.data.frame(as.vector(PPIB_levels$RNA))
+df$siRNA <- as.factor(c('LUC','LUC','LUC','PPIB','PPIB','PPIB'))
+ggplot(df, aes(x = siRNA, y = `as.vector(PPIB_levels$RNA)`)) +
+  geom_boxplot(aes(fill = siRNA)) +
+  scale_fill_manual(values = c('gray','darkturquoise')) + 
+  geom_beeswarm(size = 2.5, cex = 2) + 
+  ylab('Average PPIB level') +
+  ylim(c(0,6)) +
+  ggtitle('CD11B+ cells') +
+  theme_prism() + 
+  theme(plot.title = element_text(hjust = 0, face = 'italic')) + 
+  NoLegend()
+colnames(df) <- c('Average PPIB level','siRNA')
+write.csv(df, "2023.10.27_CD11B+.csv")
