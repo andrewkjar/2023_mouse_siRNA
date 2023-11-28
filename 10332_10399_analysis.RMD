@@ -707,3 +707,49 @@ write.csv(df, "2023.10.27_Arachnoid barrier cells.csv")
 
 # Save RDS
 saveRDS(so.fibroblasts, "2023.10.27_so.fibroblasts_AK_10332_10399.RDS")
+
+
+# Compile annotations together
+cell_types <- as.data.frame(so$cell_type)
+cell_types$cell <- rownames(cell_types)
+cell_types$`so$cell_type` <- as.character(cell_types$`so$cell_type`)
+cell_types$number <- 1:nrow(cell_types)
+
+fibroblast_names <- as.data.frame(so.fibroblasts$cell_name)
+fibroblast_names$cell <- rownames(fibroblast_names)
+fibroblast_names$`so.fibroblasts$cell_name` <- as.character(fibroblast_names$`so.fibroblasts$cell_name`)
+
+compiled_names <- merge(fibroblast_names, cell_types, by = 'cell', all.y = T)
+
+compiled_names$name <- compiled_names$`so$cell_type`
+for (i in 1:nrow(compiled_names)) {
+  if(!is.na(compiled_names[i,2])){
+    name = compiled_names$`so.fibroblasts$cell_name`[i]
+    compiled_names$name[i] = name
+  }
+}
+
+compiled_names <- compiled_names[order(compiled_names$number), ]
+so <- AddMetaData(so, metadata = compiled_names$name, col.name = 'compiled_names')
+
+sample_levels <- c('Smooth muscle cells','Endothelial cells / Pericytes','Endothelial cells (Arterial)','Endothelial cells (Venous / Capillary)','Choroid plexus epithelial cells','Ependymal cells','Dural border cells','Inner arachnoid cells','Arachnoid barrier cells','Parenchymal perivascular fibroblasts','Pial fibroblasts','Olfactory ensheathing cells','Oligodendrocytes','Astrocytes','Bergmann glia','Neural IPCs','Neurons','Microglia','Unknown')
+so$compiled_names <- factor(x = so$compiled_names, levels = sample_levels)
+
+# Update visualizations for updated annotation
+pdf("2023.11.28_DimPlot_AK_10332_10339.pdf", width = 11, height = 8)
+DimPlot(subset(so, cell_type != 'Unknown'), group.by = 'compiled_names')
+DimPlot(subset(so, cell_type != 'Unknown'), group.by = 'compiled_names', label = T)
+
+pdf("2023.11.28_DotPlot_markers_AK_10332_10339.pdf", height = 8, width = 15)
+DotPlot(so, group.by = 'compiled_names', features = c('Acta2','Mustn1','Tagln','Myh11','Ly6c1','Cldn5','Ly6a','Pltp','Flt1','Degs2','Kcnj8','Higd1b','Rgs5','Hey1','Bmx','Sema3g','Slc16a2','Car4','Mfsd2a','Icam1','Slc38a5','Vwf','Ttr','Folr1','Clicb','Kl','Ccdc153','Tmem212','Hdc','Dynlrb2')) + 
+        scale_colour_gradient2(low="steelblue", mid="lightgrey", high="darkgoldenrod1") + theme(axis.text.x = element_text(angle = 90))
+DotPlot(so, group.by = 'compiled_names', features = c('Prss56','Clca3a1','Fabp7','Frzb','Opalin','Ninj2','Mal','Mog','Hapln2','Docks','Anln','Gjb1','Fam107a','Cbs','Mlc1','Ntsr2','Slc7a11','Fgfr3','Agt','Slc6a11','Gldc','Slc13a3','Islr','Gdf10','Timp4','Hopx','Id4','2810417H13Rik','Cdca7','Rrm2','Ube2c','Top2a','Birc5','Map2','NeuN','Snap25','Slc17a7','Gad2','Reln','Itgam','Trem2')) + 
+        scale_colour_gradient2(low="steelblue", mid="lightgrey", high="darkgoldenrod1")  + theme(axis.text.x = element_text(angle = 90))
+DotPlot(so, group.by = 'compiled_names', features = c('Slc47a1','Col1a1','Dpp4','Ppp1r1a','Slc7a11','Lama1','Col15a1','Tcf21')) + 
+        scale_colour_gradient2(low="steelblue", mid="lightgrey", high="darkgoldenrod1")  + theme(axis.text.x = element_text(angle = 90))
+
+# Write out cell proportions
+write.csv(table(so$compiled_names, so$orig.ident), "2023.11.28_CD11B-_cell_proportions.csv")
+
+# Save dataset
+saveRDS(so,"2023.11.28_so.combined_AK_10332_10339.RDS")
