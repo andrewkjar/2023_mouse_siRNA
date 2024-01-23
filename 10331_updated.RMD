@@ -89,7 +89,7 @@ saveRDS(so.combined, "2024.01.23_AK_10331_so.combined.RDS")
 pdf("2024.01.23_DimPlot_10331.pdf", width = 5, height = 4)
 DimPlot(subset(so.combined, cell_type != 'unknown'))
 DimPlot(subset(so.combined, cell_type != 'unknown'), group.by = 'siRNA', cols = c('gray','black')) + ggtitle('')
-DimPlot(subset(so.combined, cell_type != 'unknown'), group.by = 'cell_type', cols = c('goldenrod','cyan4','darkgreen')) + ggtitle('')
+DimPlot(subset(so.combined, cell_type != 'unknown'), group.by = 'cell_type', cols = c('goldenrod','purple','darkgreen')) + ggtitle('')
 
 pdf("2024.01.23_DotPlot_cell_type_markers_10331.pdf", width = 14, height = 3.5)
 DotPlot(subset(so.combined, cell_type != 'unknown'), group.by = 'cell_type', features = c('Crybb1','Cst3','P2ry12','Pros1','Tmem119','Apoe','Spp1','Lpl','Lyz2','Pf4','Ms4a7','Ccl24','F13a1','Ms4a6','Mrc1','Lyve1')) + scale_colour_gradient2(low="steelblue", mid="lightgrey", high="darkgoldenrod1")
